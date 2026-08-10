@@ -1,15 +1,22 @@
+import { Route, Routes } from "react-router-dom"
+import MobileNav from "./components/MobileNav"
+import Navbar from "./components/Navbar"
+import Create from "./pages/Create"
+import Explore from "./pages/Explore"
+import MyNfts from "./pages/MyNfts"
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <header className="border-b border-gray-800 px-6 py-4">
-        <h1 className="text-xl font-semibold">NFT Marketplace</h1>
-      </header>
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-gray-400">
-          Halaman dan fitur akan diimplementasikan pada tahap
-          pengembangan berikutnya.
-        </p>
+    <div className="min-h-screen">
+      <Navbar />
+      <main className="pb-24 md:pb-0">
+        <Routes>
+          <Route path="/" element={<Explore />} />
+          <Route path="/my-nfts" element={<MyNfts />} />
+          <Route path="/create" element={<Create />} />
+        </Routes>
       </main>
+      <MobileNav />
     </div>
   )
 }

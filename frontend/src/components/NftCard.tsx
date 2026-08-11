@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { shortenAddress } from "../utils/wallet"
 
 interface NftCardProps {
   imageUrl?: string | null
@@ -57,9 +58,16 @@ function NftCard({ imageUrl, title, creator, price, badge }: NftCardProps) {
       </div>
 
       <div className="px-3 pb-3 pt-4">
-        <p className="font-sora text-lg font-semibold text-on-surface">{title}</p>
+        <p className="font-sora text-lg font-semibold text-on-surface">
+          {title}
+        </p>
         <p className="mt-0.5 text-sm text-on-surface-muted">
-          by <span className="font-medium text-on-surface">{creator || "Unknown"}</span>
+          by{" "}
+          <span className="font-medium text-on-surface">
+            {creator.length > 10
+              ? shortenAddress(creator)
+              : creator || "Unknown"}
+          </span>
         </p>
         <div className="mt-3 flex items-center justify-between">
           {price ? (

@@ -1,16 +1,13 @@
-import { useMemo, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
+import { formatEther } from "ethers"
 import FilterChips from "../components/FilterChips"
 import NftCard from "../components/NftCard"
-import { mockNfts, type NftStatus } from "../data/mockNfts"
 import { useWallet } from "../hooks/useWallet"
 import { shortenAddress } from "../utils/wallet"
-
-const statusBadge: Record<NftStatus, string> = {
-  listed: "Listed",
-  sold: "Sold",
-  owned: "Owned",
-}
+import { API_URL } from "../config"
+import { resolveIpfsUri } from "../utils/ipfs"
+import type { NftItem } from "../types/nft"
 
 function EmptyIllustration() {
   return (
@@ -37,14 +34,48 @@ function EmptyIllustration() {
 function MyNfts() {
   const { address, isConnecting, error, connect } = useWallet()
   const [filter, setFilter] = useState("all")
+  const [items, setItems] = useState<NftItem[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  const myNfts = useMemo(() => mockNfts.filter((item) => item.mine), [])
+  const fetchMyNfts = useCallback(
+    async (currentFilter: string, userAddress: string) => {
+      setIsLoading(true)
+      try {
+        let url = `${API_URL}/api/nfts`
 
-  const visibleItems = useMemo(() => {
-    if (filter === "listed") return myNfts.filter((item) => item.listed)
-    if (filter === "created") return myNfts.filter((item) => item.createdByMe)
-    return myNfts
-  }, [myNfts, filter])
+        if (currentFilter === "created") {
+          url = `${API_URL}/api/nfts?creator=${userAddress}`
+        } else {
+          url = `${API_URL}/api/nfts/owner/${userAddress}`
+        }
+
+        const res = await fetch(url)
+        if (!res.ok) throw new Error("Failed to fetch")
+
+        const data = await res.json()
+        let newItems: NftItem[] = data.data || []
+
+        if (currentFilter === "listed") {
+          newItems = newItems.filter(item => item.listed)
+        }
+
+        setItems(newItems)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (address) {
+      fetchMyNfts(filter, address)
+    } else {
+      setItems([])
+    }
+  }, [address, filter, fetchMyNfts])
 
   if (!address) {
     return (
@@ -71,7 +102,7 @@ function MyNfts() {
 
   return (
     <div className="mx-auto max-w-[1152px] px-4 py-10 sm:px-6 lg:px-8">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <header className="mb-8 flex flex-col items-start gap-4">
         <div>
           <h1 className="font-sora text-[32px] font-semibold leading-[1.2] tracking-[-0.01em] text-on-surface">
             My NFTs
@@ -80,10 +111,6 @@ function MyNfts() {
             Koleksi NFT yang Anda miliki.
           </p>
         </div>
-        <span className="badge">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          <span className="font-mono">{shortenAddress(address)}</span>
-        </span>
       </header>
 
       <div className="mb-6">
@@ -98,20 +125,24 @@ function MyNfts() {
         />
       </div>
 
-      {visibleItems.length > 0 ? (
+      {isLoading ? (
+        <div className="py-20 text-center text-on-surface-muted">
+          Loading NFTs...
+        </div>
+      ) : items.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 sm:gap-6">
-          {visibleItems.map((item) => (
+          {items.map(item => (
             <NftCard
-              key={item.id}
-              imageUrl={item.imageUrl}
-              title={item.name}
+              key={item.tokenId}
+              imageUrl={resolveIpfsUri(item.imageUrl)}
+              title={item.name || `NFT #${item.tokenId}`}
               creator={item.creator}
-              price={item.listed ? item.price : null}
-              badge={statusBadge[item.status]}
+              price={item.price ? formatEther(item.price) : null}
+              badge={item.listed ? "Listed" : "Owned"}
             />
           ))}
         </div>
-      ) : myNfts.length === 0 ? (
+      ) : filter === "all" ? (
         <div className="flex flex-col items-center gap-6 py-20 text-center">
           <EmptyIllustration />
           <h2 className="font-sora text-2xl font-semibold text-on-surface">

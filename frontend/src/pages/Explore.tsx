@@ -1,16 +1,13 @@
-import { useMemo, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
+import { formatEther } from "ethers"
 import FilterChips from "../components/FilterChips"
 import NftCard from "../components/NftCard"
-import { mockNfts, type NftStatus } from "../data/mockNfts"
+import { API_URL } from "../config"
+import { resolveIpfsUri } from "../utils/ipfs"
+import type { NftItem } from "../types/nft"
 
 const PAGE_SIZE = 8
-
-const statusBadge: Record<NftStatus, string> = {
-  listed: "Listed",
-  sold: "Sold",
-  owned: "Owned",
-}
 
 function scrollToGrid() {
   document
@@ -21,24 +18,50 @@ function scrollToGrid() {
 function Explore() {
   const [filter, setFilter] = useState("all")
   const [sort, setSort] = useState("latest")
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [items, setItems] = useState<NftItem[]>([])
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [totalCount, setTotalCount] = useState(0)
 
-  const items = useMemo(() => {
-    let result = [...mockNfts]
+  const fetchNfts = useCallback(async (pageNum: number, currentFilter: string, currentSort: string, append: boolean) => {
+    setIsLoading(true)
+    try {
+      const url = new URL(`${API_URL}/api/nfts`)
+      url.searchParams.append("page", pageNum.toString())
+      url.searchParams.append("limit", PAGE_SIZE.toString())
+      url.searchParams.append("sort", currentSort)
+      if (currentFilter === "listed") {
+        url.searchParams.append("listed", "true")
+      }
 
-    if (filter === "listed") {
-      result = result.filter((item) => item.listed)
+      const res = await fetch(url.toString())
+      if (!res.ok) throw new Error("Failed to fetch")
+      const data = await res.json()
+      
+      const newItems = data.data || []
+      setItems(prev => append ? [...prev, ...newItems] : newItems)
+      setTotalCount(data.total || 0)
+      setHasMore(newItems.length === PAGE_SIZE)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
     }
+  }, [])
 
-    result.sort((a, b) =>
-      sort === "latest" ? b.id - a.id : a.id - b.id,
-    )
+  // Reset and fetch when filter or sort changes
+  useEffect(() => {
+    setPage(1)
+    fetchNfts(1, filter, sort, false)
+  }, [filter, sort, fetchNfts])
 
-    return result
-  }, [filter, sort])
-
-  const visibleItems = items.slice(0, visibleCount)
-  const hasMore = visibleCount < items.length
+  // Fetch when page changes (Load More)
+  useEffect(() => {
+    if (page > 1) {
+      fetchNfts(page, filter, sort, true)
+    }
+  }, [page, filter, sort, fetchNfts])
 
   return (
     <div className="mx-auto max-w-[1152px] px-4 sm:px-6 lg:px-8">
@@ -62,7 +85,7 @@ function Explore() {
       <section id="explore-grid" className="scroll-mt-24 pb-16">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary">
-            All items · {items.length}
+            All items · {totalCount}
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <FilterChips
@@ -93,26 +116,33 @@ function Explore() {
         </div>
 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 sm:gap-6">
-          {visibleItems.map((item) => (
+          {items.map((item) => (
             <NftCard
-              key={item.id}
-              imageUrl={item.imageUrl}
-              title={item.name}
+              key={item.tokenId}
+              imageUrl={resolveIpfsUri(item.imageUrl)}
+              title={item.name || `NFT #${item.tokenId}`}
               creator={item.creator}
-              price={item.listed ? item.price : null}
-              badge={statusBadge[item.status]}
+              price={item.price ? formatEther(item.price) : null}
+              badge={item.listed ? "Listed" : "Owned"}
             />
           ))}
         </div>
+
+        {items.length === 0 && !isLoading && (
+          <div className="py-20 text-center text-on-surface-muted">
+            Tidak ada NFT yang ditemukan.
+          </div>
+        )}
 
         {hasMore && (
           <div className="mt-10 flex justify-center">
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              onClick={() => setPage(p => p + 1)}
+              disabled={isLoading}
             >
-              Load more
+              {isLoading ? "Loading..." : "Load more"}
             </button>
           </div>
         )}

@@ -56,12 +56,15 @@ function WalletButton() {
         <>
           <button
             type="button"
-            onClick={() => setMenuOpen((o) => !o)}
+            onClick={() => setMenuOpen(o => !o)}
             className="flex h-11 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-4 transition-colors hover:bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
           >
-            <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
+            <span
+              className="h-2 w-2 rounded-full bg-success"
+              aria-hidden="true"
+            />
             <span className="font-mono text-sm text-on-surface">
               {shortenAddress(address)}
             </span>
@@ -204,18 +207,11 @@ function Navbar() {
     <header className="sticky top-0 z-40 border-b border-border bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1152px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-primary">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2 22 20H2L12 2Z" />
-            </svg>
-          </span>
-          <span className="font-sora text-lg font-semibold text-on-surface">
-            NFT Marketplace
-          </span>
+          <img src="logo.png" alt="Logo" width={50} height={50} />
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          {navLinks.map((link) => (
+          {navLinks.map(link => (
             <NavLink
               key={link.to}
               to={link.to}

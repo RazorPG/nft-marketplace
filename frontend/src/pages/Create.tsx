@@ -1,9 +1,13 @@
 import { useMemo, useRef, useState, type FormEvent } from "react"
 import { Link } from "react-router-dom"
+import { Contract, parseEther } from "ethers"
+import { useWallet } from "../hooks/useWallet"
+import { NFT_ADDRESS, NFT_ABI, API_URL, MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from "../config"
 import NftCard from "../components/NftCard"
 import Modal from "../components/Modal"
 
 function Create() {
+  const { signer } = useWallet()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -14,6 +18,7 @@ function Create() {
   const [listForSale, setListForSale] = useState(false)
   const [price, setPrice] = useState("")
   const [successOpen, setSuccessOpen] = useState(false)
+  const [isMinting, setIsMinting] = useState(false)
 
   const handleFile = (file: File | undefined) => {
     if (!file) return
@@ -41,13 +46,72 @@ function Create() {
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    setSuccessOpen(true)
+    if (!signer || !image || isMinting) return
+
+    try {
+      setIsMinting(true)
+      
+      const formData = new FormData()
+      formData.append("image", image)
+      formData.append("name", name)
+      formData.append("description", description)
+
+      const response = await fetch(`${API_URL}/api/nfts/upload`, {
+        method: "POST",
+        body: formData,
+      })
+      const data = await response.json()
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to upload to IPFS")
+      }
+
+      const metadataURI = data.metadataURI
+
+      // Mint NFT
+      const nftContract = new Contract(NFT_ADDRESS, NFT_ABI, signer)
+      const tx = await nftContract.mint(metadataURI)
+      const receipt = await tx.wait()
+
+      // List on Marketplace
+      if (listForSale && priceValid) {
+        const event = receipt?.logs?.find((log: any) => {
+          try {
+            const parsed = nftContract.interface.parseLog(log)
+            return parsed?.name === "NFTMinted"
+          } catch {
+            return false
+          }
+        })
+
+        if (event) {
+          const parsedLog = nftContract.interface.parseLog(event)
+          const tokenId = parsedLog?.args?.[1]
+          
+          if (tokenId) {
+            const approveTx = await nftContract.approve(MARKETPLACE_ADDRESS, tokenId)
+            await approveTx.wait()
+            
+            const marketplaceContract = new Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, signer)
+            const listTx = await marketplaceContract.listItem(NFT_ADDRESS, tokenId, parseEther(price))
+            await listTx.wait()
+          }
+        }
+      }
+
+      setSuccessOpen(true)
+    } catch (error) {
+      console.error("Minting failed:", error)
+      alert("Failed to mint NFT. Please see console for details.")
+    } finally {
+      setIsMinting(false)
+    }
   }
 
   const priceValid = price.trim() !== "" && Number(price) > 0
-  const canSubmit = name.trim() !== "" && (!listForSale || priceValid)
+  const canSubmit = name.trim() !== "" && (!listForSale || priceValid) && !isMinting && !!image && !!signer
 
   const previewPrice = useMemo(() => {
     if (!listForSale || !priceValid) return null
@@ -225,7 +289,7 @@ function Create() {
 
           <section className="flex flex-col gap-3">
             <button type="submit" className="btn-primary" disabled={!canSubmit}>
-              {listForSale ? "Mint & List" : "Mint NFT"}
+              {isMinting ? "Processing..." : (listForSale ? "Mint & List" : "Mint NFT")}
             </button>
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary">
               Fee 1% marketplace + biaya gas ditanggung pembuat

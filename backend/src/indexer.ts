@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { JsonRpcProvider, Contract, type Log, type Result } from "ethers";
+import axios from "axios";
 import prisma from "./prisma.js";
 import NFTArtifact from "./abi/NFT.json" with { type: "json" };
 import MarketplaceArtifact from "./abi/Marketplace.json" with { type: "json" };
@@ -37,15 +38,48 @@ const toChecksummed = (value: unknown): string => {
 async function handleNFTMinted(creator: unknown, tokenId: bigint, tokenURI: string): Promise<void> {
   const tokenIdNumber = Number(tokenId);
   const creatorAddress = toChecksummed(creator);
+  
+  let name = null;
+  let description = null;
+  let imageUrl = null;
+  let metadata = null;
+
+  if (tokenURI) {
+    try {
+      const url = tokenURI.startsWith("ipfs://") 
+        ? tokenURI.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/") 
+        : tokenURI;
+      const res = await axios.get(url, { timeout: 10000 });
+      metadata = res.data;
+      name = metadata?.name ?? null;
+      description = metadata?.description ?? null;
+      imageUrl = metadata?.image ?? null;
+    } catch (e: any) {
+      console.error(`Indexer: gagal fetch metadata untuk token #${tokenIdNumber}`, e.message);
+    }
+  }
+
   await prisma.nft.upsert({
     where: { tokenId: tokenIdNumber },
-    update: { creator: creatorAddress, owner: creatorAddress, tokenURI },
+    update: { 
+      creator: creatorAddress, 
+      owner: creatorAddress, 
+      tokenURI,
+      name,
+      description,
+      imageUrl,
+      metadata: metadata || undefined,
+    },
     create: {
       tokenId: tokenIdNumber,
       contractAddress: NFT_ADDRESS.toLowerCase(),
       owner: creatorAddress,
       creator: creatorAddress,
       tokenURI,
+      name,
+      description,
+      imageUrl,
+      metadata: metadata || undefined,
     },
   });
   console.log(`Indexer: NFTMinted #${tokenIdNumber}`);

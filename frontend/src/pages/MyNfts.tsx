@@ -37,6 +37,8 @@ function MyNfts() {
   const [items, setItems] = useState<NftItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  console.log("items", items)
+
   const fetchMyNfts = useCallback(
     async (currentFilter: string, userAddress: string) => {
       setIsLoading(true)
@@ -134,6 +136,7 @@ function MyNfts() {
           {items.map(item => (
             <NftCard
               key={item.tokenId}
+              tokenId={item.tokenId}
               imageUrl={resolveIpfsUri(item.imageUrl)}
               title={item.name || `NFT #${item.tokenId}`}
               creator={item.creator}

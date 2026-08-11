@@ -119,6 +119,7 @@ function Explore() {
           {items.map((item) => (
             <NftCard
               key={item.tokenId}
+              tokenId={item.tokenId}
               imageUrl={resolveIpfsUri(item.imageUrl)}
               title={item.name || `NFT #${item.tokenId}`}
               creator={item.creator}

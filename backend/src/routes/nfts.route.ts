@@ -11,10 +11,10 @@ router.post("/upload", upload.single("image"), uploadNFT);
 // GET /api/nfts?listed=true&page=1&limit=20&creator=&contract=&sort=
 router.get("/", getNFTs);
 
-// GET /api/nfts/:tokenId
-router.get("/:tokenId", getNFTById);
-
 // GET /api/nfts/owner/:address
 router.get("/owner/:address", getNFTsByOwner);
+
+// GET /api/nfts/:tokenId
+router.get("/:tokenId", getNFTById);
 
 export default router;

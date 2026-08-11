@@ -1,7 +1,9 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import { shortenAddress } from "../utils/wallet"
 
 interface NftCardProps {
+  tokenId: number
   imageUrl?: string | null
   title: string
   creator?: string
@@ -9,11 +11,11 @@ interface NftCardProps {
   badge?: string
 }
 
-function NftCard({ imageUrl, title, creator, price, badge }: NftCardProps) {
+function NftCard({ tokenId, imageUrl, title, creator, price, badge }: NftCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
 
   return (
-    <div className="group overflow-hidden rounded-xl border border-border bg-surface p-2 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover">
+    <Link to={`/nft/${tokenId}`} className="block group overflow-hidden rounded-xl border border-border bg-surface p-2 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover">
       <div className="relative aspect-square overflow-hidden rounded-lg bg-background">
         {imageUrl ? (
           <>
@@ -82,7 +84,7 @@ function NftCard({ imageUrl, title, creator, price, badge }: NftCardProps) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 

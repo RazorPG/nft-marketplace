@@ -302,6 +302,7 @@ function Create() {
             Live preview
           </p>
           <NftCard
+            tokenId={0}
             imageUrl={previewUrl}
             title={name.trim() || "Untitled NFT"}
             creator="you"

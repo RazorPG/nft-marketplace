@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar"
 import Create from "./pages/Create"
 import Explore from "./pages/Explore"
 import MyNfts from "./pages/MyNfts"
+import NftDetails from "./pages/NftDetails"
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Explore />} />
           <Route path="/my-nfts" element={<MyNfts />} />
           <Route path="/create" element={<Create />} />
+          <Route path="/nft/:id" element={<NftDetails />} />
         </Routes>
       </main>
       <MobileNav />

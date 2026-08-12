@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "NFTs" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "tokenId" INTEGER NOT NULL,
     "contractAddress" TEXT NOT NULL,
     "owner" TEXT NOT NULL,
@@ -12,8 +12,10 @@ CREATE TABLE "NFTs" (
     "imageUrl" TEXT,
     "tokenURI" TEXT,
     "metadata" JSONB,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "NFTs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex

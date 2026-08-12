@@ -10,9 +10,13 @@ import { startIndexer } from "./indexer.js"
 const app = express()
 const PORT = Number(process.env.PORT ?? 4000)
 
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
+  .split(",")
+  .map(o => o.trim())
+
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ALLOWED_ORIGINS,
     credentials: true,
   })
 )

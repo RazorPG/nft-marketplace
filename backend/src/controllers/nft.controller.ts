@@ -53,11 +53,18 @@ export const getNFTs = async (req: Request, res: Response): Promise<void> => {
   const contractAddress =
     typeof req.query.contract === "string" ? req.query.contract : undefined;
   const sort = req.query.sort === "oldest" ? "oldest" : "newest";
+  const search = typeof req.query.search === "string" ? req.query.search : undefined;
 
   const where = {
     ...(listed === undefined ? {} : { listed }),
     ...(creator ? { creator: { equals: creator.toLowerCase() } } : {}),
     ...(contractAddress ? { contractAddress } : {}),
+    ...(search ? {
+      OR: [
+        { name: { contains: search } },
+        { description: { contains: search } },
+      ]
+    } : {})
   };
 
   const [total, items] = await Promise.all([

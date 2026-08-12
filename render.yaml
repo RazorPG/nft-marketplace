@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: nft-marketplace-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: RPC_URL
+        sync: false
+      - key: NFT_CONTRACT_ADDRESS
+        sync: false
+      - key: MARKETPLACE_CONTRACT_ADDRESS
+        sync: false
+      - key: FROM_BLOCK
+        sync: false
+      - key: POLL_INTERVAL_MS
+        value: 30000
+      - key: LOG_CHUNK_SIZE
+        value: 10
+      - key: PINATA_JWT
+        sync: false
+      - key: PINATA_API_KEY
+        sync: false
+      - key: PINATA_API_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

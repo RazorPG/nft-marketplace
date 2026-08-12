@@ -81,7 +81,7 @@ function MyNfts() {
 
   if (!address) {
     return (
-      <div className="mx-auto flex max-w-[1152px] flex-col items-center gap-6 px-4 py-24 text-center sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-24 text-center sm:px-6 lg:px-8">
         <EmptyIllustration />
         <h1 className="font-sora text-[32px] font-semibold leading-[1.2] tracking-[-0.01em] text-on-surface">
           Connect to see your NFTs
@@ -103,7 +103,7 @@ function MyNfts() {
   }
 
   return (
-    <div className="mx-auto max-w-[1152px] px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <header className="mb-8 flex flex-col items-start gap-4">
         <div>
           <h1 className="font-sora text-[32px] font-semibold leading-[1.2] tracking-[-0.01em] text-on-surface">

@@ -126,25 +126,32 @@ const EVENT_HANDLERS: Record<string, (args: Result) => Promise<void>> = {
   NFTListingCancelled: (args) => handleNFTListingCancelled(args[0], args[1]),
 };
 
-async function processContract(contract: Contract | undefined, currentBlock: number): Promise<void> {
+// Alchemy free tier limits eth_getLogs to 10 blocks per request.
+// We chunk the range to stay within the limit.
+const LOG_CHUNK_SIZE = Number(process.env.LOG_CHUNK_SIZE ?? 10);
+
+async function processContract(contract: Contract | undefined, from: number, to: number): Promise<void> {
   if (!contract) return;
+  if (from > to) return;
 
-  const from = Math.max(lastBlock + 1, 0);
-  if (from > currentBlock) return;
+  // Split into chunks of LOG_CHUNK_SIZE blocks
+  for (let chunkFrom = from; chunkFrom <= to; chunkFrom += LOG_CHUNK_SIZE) {
+    const chunkTo = Math.min(chunkFrom + LOG_CHUNK_SIZE - 1, to);
 
-  const logs = (await contract.queryFilter("*", from, currentBlock)) as Log[];
-  if (logs.length === 0) return;
+    const logs = (await contract.queryFilter("*", chunkFrom, chunkTo)) as Log[];
+    if (logs.length === 0) continue;
 
-  logs.sort((a, b) => a.blockNumber - b.blockNumber || a.index - b.index);
+    logs.sort((a, b) => a.blockNumber - b.blockNumber || a.index - b.index);
 
-  for (const log of logs) {
-    try {
-      const parsed = contract.interface.parseLog(log);
-      if (!parsed) continue;
-      const handler = EVENT_HANDLERS[parsed.name];
-      if (handler) await handler(parsed.args);
-    } catch (error) {
-      console.error(`Indexer: gagal memproses event di block #${log.blockNumber}`, error);
+    for (const log of logs) {
+      try {
+        const parsed = contract.interface.parseLog(log);
+        if (!parsed) continue;
+        const handler = EVENT_HANDLERS[parsed.name];
+        if (handler) await handler(parsed.args);
+      } catch (error) {
+        console.error(`Indexer: gagal memproses event di block #${log.blockNumber}`, error);
+      }
     }
   }
 }
@@ -152,9 +159,11 @@ async function processContract(contract: Contract | undefined, currentBlock: num
 export async function syncOnce(): Promise<void> {
   if (!provider) return;
   const currentBlock = await provider.getBlockNumber();
+  const from = Math.max(lastBlock + 1, 0);
+  if (from > currentBlock) return;
 
-  await processContract(nftContract, currentBlock);
-  await processContract(marketplaceContract, currentBlock);
+  await processContract(nftContract, from, currentBlock);
+  await processContract(marketplaceContract, from, currentBlock);
 
   lastBlock = currentBlock;
 }
